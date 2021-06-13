@@ -3,40 +3,29 @@ import UIKit
 class MessageDecryptor: NSObject {
     
     func decryptMessage(_ message: String) -> String {
+        //2[s2[e2[c2[r2[e2[t2[m]]]]]]essage]
         var decrypted = ""
-//        let pattern = "\\[([a-zA-Z-]+)\\]"
-//        let pattern2 = "([0-9]+\\[([a-zA-Z-]+)\\])"
-//        let pattern3 = "([0-9]+\\[(\\[?[a-zA-Z-]+\\]?)\\])"
-//        let matched = matches(for: pattern3, in: message)
-//        print(matched)
-        
         let preprocessed = message.split{$0 == "]"}.map{String($0)}
         for i in 0...preprocessed.count-1{
             let item = preprocessed[i]
-            let subItems = matches(for: "[0-9]+\\[([a-zA-Z-]+)", in: item)
+            let subItems = matches(for: "([a-zA-Z-]+)?[0-9]+\\[([a-zA-Z-]+)?", in: item)
             
             if(subItems.count < 1){
-                let phrase = item.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "")
-                return decrypted + phrase
+                decrypted = decrypted + item.replacingOccurrences(of: "[", with: "").replacingOccurrences(of: "]", with: "")
+                
+                if(preprocessed.count == 1){
+                    return decrypted
+                }
             }
             
             if(subItems.count > 1){
                 var phrase = ""
                 for k in (0...subItems.count - 1).reversed(){
-//                    let actors = subItems[k].split{$0 == "["}.map{String($0)}
-//                    var subMsg = ""
-//                    if let multiplier = Int(actors[0]){
-//                        for r in 1...multiplier {
-//                            subMsg.append(actors[1])
-//                            subMsg.append(phrase)
-//                        }
-//                        phrase = subMsg
-//                    }
                     phrase = constructPhrase(subItems[k], phrase)
                 }
                 decrypted.append(phrase)
             }
-            else{
+            if(subItems.count == 1){
                 let phrase = constructPhrase(subItems[0], "")
                 decrypted.append(phrase)
             }
@@ -49,10 +38,17 @@ class MessageDecryptor: NSObject {
         var phrase = previousMessage
         let actors = subMessage.split{$0 == "["}.map{String($0)}
         var subMsg = ""
-        if let multiplier = Int(actors[0]){
+        
+        let prefix = matches(for: "[a-zA-Z-]+", in: actors[0])
+        
+        let multipliers = matches(for: "[0-9]+", in: actors[0])
+        
+        if let multiplier = Int(multipliers[0]){
             if(multiplier > 0){
                 for _ in 1...multiplier {
-                    subMsg.append(actors[1])
+                    if(actors.count > 1){
+                        subMsg.append(actors[1])
+                    }
                     subMsg.append(phrase)
                 }
                 phrase = subMsg
@@ -61,6 +57,12 @@ class MessageDecryptor: NSObject {
                 phrase = ""
             }
         }
+        
+        if(prefix.count > 0){
+            let prefixToAdd = prefix[0]
+            return prefixToAdd + phrase
+        }
+        
         return phrase
     }
     
